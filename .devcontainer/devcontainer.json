@@ -1,0 +1,32 @@
+{
+  "name": "IlmSaathi Codespaces",
+  "dockerComposeFile": "compose.yaml",
+  "service": "workspace",
+  "runServices": ["workspace", "mongo", "mongo-init"],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "node",
+  "forwardPorts": [5173, 4000],
+  "portsAttributes": {
+    "5173": {
+      "label": "IlmSaathi Web",
+      "onAutoForward": "openBrowser",
+      "visibility": "private"
+    },
+    "4000": {
+      "label": "IlmSaathi API",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    }
+  },
+  "postCreateCommand": "npm run env:generate && npm ci && npm run typecheck",
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "mongodb.mongodb-vscode"],
+      "settings": {
+        "eslint.workingDirectories": [{ "mode": "auto" }],
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  }
+}

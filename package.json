@@ -1,0 +1,52 @@
+{
+  "name": "ilmsaathi-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IlmSaathi women-focused learning marketplace",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "prepare:shared": "npm run build --workspace packages/shared",
+    "dev": "npm run prepare:shared && node scripts/run-workspaces.mjs dev --parallel",
+    "dev:native": "node scripts/native-mongo.mjs start && npm run seed && npm run dev",
+    "dev:codespaces": "node scripts/dev-codespaces.mjs",
+    "dev:api": "npm run prepare:shared && node scripts/run-workspaces.mjs dev --scope apps/api",
+    "dev:web": "node scripts/run-workspaces.mjs dev --scope apps/web",
+    "dev:web:demo": "node scripts/run-workspaces.mjs dev:demo --scope apps/web",
+    "build": "node scripts/run-workspaces.mjs build",
+    "preview": "node scripts/run-workspaces.mjs preview --parallel",
+    "start": "node scripts/run-workspaces.mjs start",
+    "lint": "node scripts/run-workspaces.mjs lint",
+    "typecheck": "npm run prepare:shared && node scripts/run-workspaces.mjs typecheck",
+    "test": "npm run prepare:shared && node scripts/run-workspaces.mjs test",
+    "test:e2e": "node scripts/run-workspaces.mjs test:e2e",
+    "smoke:local": "node scripts/smoke-local.mjs",
+    "seed": "npm run prepare:shared && node scripts/run-workspaces.mjs seed",
+    "bootstrap:admin": "npm run prepare:shared && node scripts/run-workspaces.mjs bootstrap:admin",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "env:generate": "node scripts/generate-env.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "compose:config": "docker compose config --quiet",
+    "compose:up": "docker compose up --wait",
+    "compose:down": "docker compose down",
+    "compose:logs": "docker compose logs --follow --tail=200",
+    "db:up": "docker compose up --wait mongo-rs-init",
+    "db:logs": "docker compose logs --follow --tail=200 mongo mongo-rs-init",
+    "db:native:start": "node scripts/native-mongo.mjs start",
+    "db:native:status": "node scripts/native-mongo.mjs status",
+    "db:native:stop": "node scripts/native-mongo.mjs stop"
+  },
+  "devDependencies": {
+    "mongodb": "^6.20.0",
+    "prettier": "^3.6.2"
+  }
+}

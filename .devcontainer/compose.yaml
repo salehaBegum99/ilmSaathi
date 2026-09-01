@@ -1,0 +1,87 @@
+name: ilmsaathi-codespaces
+
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/javascript-node:22-bookworm
+    init: true
+    command: sleep infinity
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/ilmsaathi?replicaSet=rs0
+      MONGODB_DB_NAME: ilmsaathi
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    networks:
+      - ilmsaathi-codespaces
+
+  mongo:
+    image: mongo:8.0
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet --host 127.0.0.1
+          --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)"
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks:
+      - ilmsaathi-codespaces
+
+  mongo-init:
+    image: mongo:8.0
+    entrypoint: ['bash', '-ec']
+    command:
+      - |
+        mongosh --quiet --host mongo --eval '
+          try {
+            const status = rs.status();
+            if (status.set !== "rs0") {
+              throw new Error("Unexpected replica-set name: " + status.set);
+            }
+          } catch (error) {
+            if (error.code !== 94 && error.codeName !== "NotYetInitialized") {
+              throw error;
+            }
+            const result = rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "mongo:27017" }]
+            });
+            if (!result.ok) {
+              printjson(result);
+              quit(2);
+            }
+          }
+
+          let ready = false;
+          for (let attempt = 0; attempt < 60; attempt += 1) {
+            const hello = db.hello();
+            if (hello.isWritablePrimary && hello.setName === "rs0") {
+              ready = true;
+              break;
+            }
+            sleep(500);
+          }
+          quit(ready ? 0 : 2);
+        '
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: 'no'
+    networks:
+      - ilmsaathi-codespaces
+
+volumes:
+  mongo_data:
+
+networks:
+  ilmsaathi-codespaces:
+    driver: bridge

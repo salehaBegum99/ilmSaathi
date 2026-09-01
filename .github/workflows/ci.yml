@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate MERN workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mongo:
+        image: mongo:8.0
+        env:
+          MONGO_INITDB_DATABASE: ilmsaathi_test
+          MONGO_INITDB_ROOT_USERNAME: ilmsaathi_ci
+          MONGO_INITDB_ROOT_PASSWORD: ilmsaathi_ci_password
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --username ilmsaathi_ci --password ilmsaathi_ci_password
+          --authenticationDatabase admin --eval 'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 10s
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: test
+      WEB_PORT: "5173"
+      API_PORT: "4000"
+      WEB_URL: http://127.0.0.1:5173
+      API_URL: http://127.0.0.1:4000
+      CORS_ORIGINS: http://127.0.0.1:5173
+      MONGO_DATABASE: ilmsaathi_test
+      MONGO_ROOT_USERNAME: ilmsaathi_ci
+      MONGO_ROOT_PASSWORD: ilmsaathi_ci_password
+      MONGODB_URI: mongodb://ilmsaathi_ci:ilmsaathi_ci_password@127.0.0.1:27017/ilmsaathi_test?authSource=admin&directConnection=true
+      MONGODB_DB_NAME: ilmsaathi_test
+      MONGODB_AUTO_INDEX: "true"
+      JWT_ACCESS_SECRET: ci-access-secret-ci-access-secret-ci-access-secret-0001
+      JWT_ISSUER: ilmsaathi-api
+      JWT_AUDIENCE: ilmsaathi-web
+      CSRF_SECRET: ci-csrf-secret-ci-csrf-secret-ci-csrf-secret-ci-0001
+      AUDIT_HMAC_SECRET: ci-audit-secret-ci-audit-secret-ci-audit-secret-0001
+      MFA_ENCRYPTION_KEY_BASE64: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      CURRENT_TERMS_VERSION: 2026-08-29
+      CURRENT_PRIVACY_VERSION: 2026-08-29
+      TRUST_PROXY: "false"
+      COOKIE_SECURE: "false"
+      VITE_API_BASE_URL: /api
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Require committed lockfile
+        run: test -f package-lock.json
+
+      - name: Install exactly from lockfile
+        run: npm ci
+
+      - name: Generate disposable CI environment for config validation
+        run: node scripts/generate-env.mjs --force
+
+      - name: Check repository health
+        run: node scripts/doctor.mjs --strict --skip-network
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and integration tests
+        run: npm test
+
+      - name: Build production artifacts
+        run: npm run build
+
+      - name: Critical-path end-to-end tests
+        run: npm run test:e2e
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high

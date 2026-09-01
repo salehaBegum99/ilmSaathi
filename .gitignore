@@ -1,0 +1,43 @@
+# Dependencies and package-manager caches
+node_modules/
+.npm/
+.tools/
+
+# Build and test output
+dist/
+build/
+coverage/
+.vite/
+.turbo/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.pem
+*.key
+
+# Runtime data
+data/
+uploads/
+tmp/
+*.log
+npm-debug.log*
+
+# Operating systems and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Miscellaneous
+*.local
+reports/
+private-uploads/
+apps/api/private-uploads/
