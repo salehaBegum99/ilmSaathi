@@ -21,8 +21,8 @@ test-results/
 *.pem
 *.key
 
-# Runtime data
-data/
+# Runtime data (root only; source folders such as apps/web/src/data must be tracked)
+/data/
 uploads/
 tmp/
 *.log
